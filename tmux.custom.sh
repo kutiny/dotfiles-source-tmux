@@ -54,6 +54,35 @@ function taa() {
         echo $args | fzf --height 50% --layout=reverse --prompt='  ' --margin=5% --border --header="$header"
     }
 
+    function show_socket_menu() {
+        socket_name=$1
+        opts=( " Open" "󰆴 Delete" )
+        option=$(echo "${opts[1]}\n${opts[2]}" | fzf --height 50% --layout=reverse --prompt='  ' --margin=5% --border --header="Select option for socket ${socket_name}:")
+
+        if [[ "$option" == "${opts[1]}" ]]; then
+            echo "$option"
+            attach_to_socket $socket_name
+            return
+        fi
+
+        if [[ "$option" == "${opts[2]}" ]]; then
+            delete_socket $socket_name
+            return
+        fi
+    }
+
+    function delete_socket() {
+        socket_name=$1
+        read "ok?You're about to delete the socket $socket_name, continue? (y/n)"
+        if [[ "$ok" =~ "[yY]" ]]; then
+            echo "tmux -L$socket_name kill-server"
+            tmux -L $socket_name kill-server
+            echo "rm -r $sockets_path/$socket_name"
+            rm -r $sockets_path/$socket_name
+            return
+        fi
+    }
+
     function get_session_count() {
         socket_name=$1
         sessions=$(get_sessions $socket_name)
@@ -103,7 +132,7 @@ function taa() {
         fi
 
         if [[ $socket_count == "1" && "$show_new_menu" == "0" ]]; then
-            attach_to_socket "$(ls $sockets_path | head -1)"
+            show_socket_menu "$(ls $sockets_path | head -1)"
             return
         fi
 
@@ -113,7 +142,7 @@ function taa() {
             create_socket
             return
         elif [[ $socket != "" ]]; then
-            attach_to_socket $socket
+            show_socket_menu $socket
             return
         fi
 
